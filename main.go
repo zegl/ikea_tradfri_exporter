@@ -40,7 +40,7 @@ func main() {
 	defer client.Close()
 
 	logger, _ := zap.NewProduction()
-	logger.Info("Starting nordpool_exporter")
+	logger.Info("Starting ikea_tradfri_exporter")
 
 	prometheus.MustRegister(NewTradfriCollector(namespace, logger, client))
 

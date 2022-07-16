@@ -12,6 +12,7 @@ type tradfriCollector struct {
 	client *tradfri.Tradfri
 
 	bulbPower     *prometheus.GaugeVec
+	bulbDimmer    *prometheus.GaugeVec
 	scrapesFailed prometheus.Counter
 }
 
@@ -35,6 +36,15 @@ func NewTradfriCollector(namespace string, logger *zap.Logger, client *tradfri.T
 			},
 			variableGroupLabelNames,
 		),
+		bulbDimmer: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Subsystem: "bulb",
+				Name:      "dimmer",
+				Help:      "Bulb Dimmer Level",
+			},
+			variableGroupLabelNames,
+		),
 		scrapesFailed: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Namespace: namespace,
@@ -50,10 +60,12 @@ func NewTradfriCollector(namespace string, logger *zap.Logger, client *tradfri.T
 
 func (c tradfriCollector) Describe(ch chan<- *prometheus.Desc) {
 	c.bulbPower.Describe(ch)
+	c.bulbDimmer.Describe(ch)
 }
 
 func (c *tradfriCollector) Collect(ch chan<- prometheus.Metric) {
 	c.bulbPower.Reset()
+	c.bulbDimmer.Reset()
 
 	if devices, err := c.client.Devices(); err != nil {
 		c.scrapesFailed.Inc()
@@ -71,6 +83,7 @@ func (c *tradfriCollector) Collect(ch chan<- prometheus.Metric) {
 				if device.Type == tradfri.DeviceTypeBulb {
 					for _, light := range device.LightSettings {
 						c.bulbPower.With(l).Set(float64(*light.Power))
+						c.bulbDimmer.With(l).Set(float64(*light.Dimmer))
 					}
 				}
 			}
@@ -78,4 +91,5 @@ func (c *tradfriCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	c.bulbPower.Collect(ch)
+	c.bulbDimmer.Collect(ch)
 }
